@@ -232,7 +232,7 @@
       const formData = new FormData();
       formData.append('image', uploadedImage);
 
-      fetch('http://localhost:5000/remove-bg', {
+      fetch('https://background-remover-backend-z86b.onrender.com', {
         method: 'POST',
         body: formData
       })
