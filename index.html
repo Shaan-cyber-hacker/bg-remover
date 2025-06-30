@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ace4Labs | Free AI Background Remover for Students</title>
+  <style>
+    :root {
+      --bg-color: #f4f6f8;
+      --text-color: #000;
+      --card-bg: #fff;
+      --button-bg: #0078D4;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #1e1e1e;
+      --text-color: #f4f4f4;
+      --card-bg: #2c2c2c;
+      --button-bg: #0a84ff;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+      margin: 0 auto;
+      transition: background 0.3s;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .drop-zone {
+      border: 2px dashed #aaa;
+      padding: 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+
+    .drop-zone.dragover {
+      background: rgba(0, 120, 212, 0.1);
+      border-color: var(--button-bg);
+    }
+
+    img {
+      max-width: 100%;
+      margin-top: 1rem;
+      border-radius: 8px;
+    }
+
+    button {
+      background: var(--button-bg);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 0.5rem;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    button:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: scale(1.02);
+      transition: all 0.2s ease;
+    }
+
+    .loader {
+      display: none;
+      margin-top: 1rem;
+    }
+
+    .loader::after {
+      content: '';
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--button-bg);
+      border-top: 3px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .theme-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: var(--text-color);
+    }
+
+    footer {
+      margin-top: 2rem;
+      text-align: center;
+      color: var(--text-color);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle">🌙</button>
+
+  <div class="container">
+    <h2>AI Background Remover</h2>
+    <p style="color: #0078D4; font-weight: bold; margin-top: -10px;">
+      🎓 Free for Students – Empowered by Ace4Labs
+    </p>
+    <p>Upload an image to remove its background using AI.</p>
+    <br>
+    <label class="drop-zone" id="dropZone">
+      <strong>Click or drag an image here</strong>
+      <input type="file" id="imageInput" accept="image/*" />
+    </label>
+    <br>
+    <div id="previewContainer"></div>
+    <br><br>
+    <button id="removeBtn" disabled>Remove Background</button>
+    <button id="resetBtn">Reset</button>
+
+    <div class="loader" id="loader"></div>
+    <div id="resultContainer"></div>
+
+     <div style="margin-top: 1.5rem;">
+      <p style="font-size: 0.9rem;">Support this free tool 💙</p>
+      <a href="upi://pay?pa=8789673274@ybl&pn=ShantanuKumar&cu=INR&tn=Support%20for%20Background%20Remover" target="_blank">
+        <button style="background: #00b386; color: white;">Pay via UPI (8789673274@ybl)</button>
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    © 2025 Ace4Labs. Built with ❤️ to empower students.
+  </footer>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const dropZone = document.getElementById('dropZone');
+    const previewContainer = document.getElementById('previewContainer');
+    const removeBtn = document.getElementById('removeBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const loader = document.getElementById('loader');
+    const resultContainer = document.getElementById('resultContainer');
+    const themeToggle = document.getElementById('themeToggle');
+
+    let uploadedImage = null;
+
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      themeToggle.textContent = isDark ? '🌙' : '☀️';
+    });
+
+    dropZone.addEventListener('click', () => imageInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      handleFile(file);
+    });
+
+    imageInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      handleFile(file);
+    });
+
+    function handleFile(file) {
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          uploadedImage = file;
+          previewContainer.innerHTML = `<img src="${event.target.result}" alt="Preview" />`;
+          removeBtn.disabled = false;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        previewContainer.innerHTML = `<p style="color: red;">Please upload a valid image file.</p>`;
+        removeBtn.disabled = true;
+      }
+    }
+
+    removeBtn.addEventListener('click', () => {
+      if (!uploadedImage) return;
+
+      loader.style.display = 'block';
+      removeBtn.disabled = true;
+      resultContainer.innerHTML = '';
+
+      const formData = new FormData();
+      formData.append('image', uploadedImage);
+
+      fetch('http://localhost:5000/remove-bg', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to process image');
+        return res.blob();
+      })
+      .then(blob => {
+        loader.style.display = 'none';
+        const url = URL.createObjectURL(blob);
+        resultContainer.innerHTML = `
+          <p><strong>Result:</strong></p>
+          <img src="${url}" alt="Processed Image" />
+          <br/><a href="${url}" download="no-bg.png"><button>Download</button></a>
+        `;
+        removeBtn.disabled = false;
+      })
+      .catch(err => {
+        loader.style.display = 'none';
+        alert('Error removing background. Please try again.');
+        console.error(err);
+        removeBtn.disabled = false;
+      });
+    });
+
+    resetBtn.addEventListener('click', () => {
+      uploadedImage = null;
+      imageInput.value = '';
+      previewContainer.innerHTML = '';
+      resultContainer.innerHTML = '';
+      removeBtn.disabled = true;
+    });
+  </script>
+</body>
+</html>
